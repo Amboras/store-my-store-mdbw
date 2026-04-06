@@ -29,7 +29,7 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-4 pt-2">
               <Link
                 href="/products"
-                className="inline-flex items-center gap-2 bg-foreground text-background px-8 py-3.5 text-sm font-semibold uppercase tracking-wide hover:opacity-90 transition-opacity"
+                className="btn-brand-primary inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold uppercase tracking-wide transition-opacity"
                 prefetch={true}
               >
                 Shop Now
@@ -37,7 +37,7 @@ export default function HomePage() {
               </Link>
               <Link
                 href="/about"
-                className="inline-flex items-center gap-2 border border-foreground px-8 py-3.5 text-sm font-semibold uppercase tracking-wide hover:bg-foreground hover:text-background transition-colors"
+                className="inline-flex items-center gap-2 border-brand-primary border px-8 py-3.5 text-sm font-semibold uppercase tracking-wide hover:bg-brand-primary hover:text-white transition-colors"
                 prefetch={true}
               >
                 Our Story

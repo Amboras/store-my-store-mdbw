@@ -16,6 +16,10 @@
     --primary-foreground: 0 0% 98%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
+
+    /* Brand colors (dynamically injected from Store.metadata.brand) */
+    /* Access in CSS: var(--brand-primary), var(--brand-secondary) */
+    /* Managed by BrandStyleInjector component */
   }
 
   .dark {
@@ -66,6 +70,35 @@
   }
   .link-underline:hover::after {
     @apply w-full;
+  }
+
+  /* Brand color utilities - uses colors from Store.metadata.brand */
+  .btn-brand-primary {
+    background-color: var(--brand-primary, hsl(var(--primary)));
+    color: white;
+  }
+  .btn-brand-primary:hover {
+    opacity: 0.9;
+  }
+
+  .text-brand-primary {
+    color: var(--brand-primary, hsl(var(--primary)));
+  }
+
+  .text-brand-secondary {
+    color: var(--brand-secondary, hsl(var(--accent)));
+  }
+
+  .border-brand-primary {
+    border-color: var(--brand-primary, hsl(var(--border)));
+  }
+
+  .bg-brand-primary {
+    background-color: var(--brand-primary, hsl(var(--primary)));
+  }
+
+  .bg-brand-secondary {
+    background-color: var(--brand-secondary, hsl(var(--accent)));
   }
 }
 

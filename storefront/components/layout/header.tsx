@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, ShoppingBag, User, Menu, X, LogIn } from 'lucide-react'
 import { useCart } from '@/hooks/use-cart'
 import { useAuth } from '@/hooks/use-auth'
+import { useBrand } from '@/hooks/use-brand'
 import CartDrawer from '@/components/cart/cart-drawer'
 import { useCollections } from '@/hooks/use-collections'
 
 export default function Header() {
   const { itemCount } = useCart()
   const { isLoggedIn } = useAuth()
+  const { brand } = useBrand()
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
@@ -43,8 +46,21 @@ export default function Header() {
             </button>
 
             {/* Logo */}
-            <Link href="/" className="font-heading text-2xl font-semibold tracking-tight">
-              Store
+            <Link href="/" className="flex items-center gap-2">
+              {brand?.logoUrl ? (
+                <Image
+                  src={brand.logoUrl}
+                  alt={brand.storeName || 'Store'}
+                  width={120}
+                  height={40}
+                  className="h-8 w-auto object-contain"
+                  priority
+                />
+              ) : (
+                <span className="font-heading text-2xl font-semibold tracking-tight">
+                  {brand?.storeName || 'Store'}
+                </span>
+              )}
             </Link>
 
             {/* Desktop Navigation */}
