@@ -527,28 +527,40 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="space-y-2 text-sm border-t pt-4">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span>{formatPrice((cart as any)?.original_item_subtotal ?? cart?.subtotal ?? 0, currency)}</span>
-                    </div>
-                    {discountTotal > 0 && (
-                      <div className="flex justify-between text-green-700 dark:text-green-500">
-                        <span className="text-muted-foreground">Discount</span>
-                        <span>-{formatPrice(discountTotal, currency)}</span>
-                      </div>
-                    )}
-                    {cart?.shipping_total != null && cart.shipping_total > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Shipping</span>
-                        <span>{formatPrice(cart.shipping_total, currency)}</span>
-                      </div>
-                    )}
-                    {cart?.tax_total != null && cart.tax_total > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Tax</span>
-                        <span>{formatPrice(cart.tax_total, currency)}</span>
-                      </div>
-                    )}
+                    {(() => {
+                      const isTaxInclusive = cart?.items?.some((item: any) => item.is_tax_inclusive)
+                      const subtotal = isTaxInclusive
+                        ? ((cart as any)?.original_item_total ?? 0)
+                        : ((cart as any)?.original_item_subtotal ?? cart?.subtotal ?? 0)
+                      return (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Subtotal</span>
+                            <span>{formatPrice(subtotal, currency)}</span>
+                          </div>
+                          {discountTotal > 0 && (
+                            <div className="flex justify-between text-green-700 dark:text-green-500">
+                              <span className="text-muted-foreground">Discount</span>
+                              <span>-{formatPrice(discountTotal, currency)}</span>
+                            </div>
+                          )}
+                          {cart?.shipping_total != null && cart.shipping_total > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Shipping</span>
+                              <span>{formatPrice(cart.shipping_total, currency)}</span>
+                            </div>
+                          )}
+                          {cart?.tax_total != null && cart.tax_total > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                {isTaxInclusive ? 'Includes tax' : 'Tax'}
+                              </span>
+                              <span>{isTaxInclusive ? '' : '+'}{formatPrice(cart.tax_total, currency)}</span>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
                     <div className="flex justify-between border-t pt-2 mt-2">
                       <span className="font-semibold">Total</span>
                       <span className="font-heading text-lg font-semibold">{formatPrice(cart?.total || 0, currency)}</span>
