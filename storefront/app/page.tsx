@@ -2,13 +2,29 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 import { ArrowRight, Truck, Shield, RotateCcw } from 'lucide-react'
 import CollectionSection from '@/components/marketing/collection-section'
 import { useCollections } from '@/hooks/use-collections'
+import { trackMetaEvent } from '@/lib/meta-pixel'
 import { HERO_PLACEHOLDER, LIFESTYLE_PLACEHOLDER } from '@/lib/utils/placeholder-images'
 
 export default function HomePage() {
   const { data: collections, isLoading } = useCollections()
+  const [newsletterEmail, setNewsletterEmail] = useState('')
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newsletterEmail.trim()) {
+      return
+    }
+
+    trackMetaEvent('Lead', {
+      content_name: 'newsletter_signup',
+      status: 'submitted',
+    })
+  }
 
   return (
     <>
@@ -76,7 +92,7 @@ export default function HomePage() {
         </section>
       ) : collections && collections.length > 0 ? (
         <>
-          {collections.map((collection: any, index: number) => (
+          {collections.map((collection: { id: string; handle: string; title: string; metadata?: Record<string, unknown> }, index: number) => (
             <CollectionSection
               key={collection.id}
               collection={collection}
@@ -157,9 +173,11 @@ export default function HomePage() {
           <p className="mt-3 text-muted-foreground">
             Be the first to know about new arrivals, exclusive offers, and more.
           </p>
-          <form className="mt-8 flex gap-2" onSubmit={(e) => e.preventDefault()}>
+          <form className="mt-8 flex gap-2" onSubmit={handleNewsletterSubmit}>
             <input
               type="email"
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
               placeholder="Enter your email"
               className="flex-1 border-b border-foreground/30 bg-transparent px-1 py-3 text-sm placeholder:text-muted-foreground focus:border-foreground focus:outline-none transition-colors"
             />

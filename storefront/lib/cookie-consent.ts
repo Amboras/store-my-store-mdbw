@@ -28,6 +28,11 @@ export function hasAnalyticsConsent(): boolean {
   return consent !== null && consent.analytics === true
 }
 
+function dispatchConsentChanged(): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event('amboras-consent-changed'))
+}
+
 export function setConsent(analytics: boolean): void {
   const value = JSON.stringify({
     analytics,
@@ -37,8 +42,10 @@ export function setConsent(analytics: boolean): void {
   const secure = window.location.protocol === 'https:' ? '; Secure' : ''
 
   document.cookie = `${CONSENT_COOKIE}=${encodeURIComponent(value)}; path=/; SameSite=Lax; max-age=${CONSENT_MAX_AGE}${secure}`
+  dispatchConsentChanged()
 }
 
 export function clearConsent(): void {
   document.cookie = `${CONSENT_COOKIE}=; path=/; max-age=0`
+  dispatchConsentChanged()
 }

@@ -1,11 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search as SearchIcon } from 'lucide-react'
 import ProductGrid from '@/components/product/product-grid'
+import { trackMetaEvent } from '@/lib/meta-pixel'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
+  const trackedQuery = useRef<string | null>(null)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const normalizedQuery = query.trim()
+    if (!normalizedQuery) return
+    if (trackedQuery.current === normalizedQuery) return
+
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      trackedQuery.current = normalizedQuery
+      trackMetaEvent('Search', {
+        search_string: normalizedQuery,
+        content_name: normalizedQuery,
+      })
+    }, 300)
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+      }
+    }
+  }, [query])
 
   return (
     <>

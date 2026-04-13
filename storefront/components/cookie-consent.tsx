@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getConsent, setConsent } from '@/lib/cookie-consent'
 import { initAnalytics } from '@/lib/analytics'
+import { fetchMetaPixelConfig, initMetaPixel } from '@/lib/meta-pixel'
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false)
@@ -24,10 +25,19 @@ export default function CookieConsent() {
     return () => window.removeEventListener('manage-cookies', handleManageCookies)
   }, [checkConsent])
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
     setConsent(true)
     setVisible(false)
     initAnalytics()
+
+    try {
+      const config = await fetchMetaPixelConfig()
+      if (config) {
+        initMetaPixel(config)
+      }
+    } catch {
+      // Ignore Meta Pixel bootstrap errors on consent accept
+    }
   }
 
   const handleDecline = () => {

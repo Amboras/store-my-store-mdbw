@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Loader2 } from 'lucide-react'
+import { trackMetaEvent } from '@/lib/meta-pixel'
 
 interface StripePaymentFormProps {
   clientSecret: string
@@ -12,13 +13,17 @@ interface StripePaymentFormProps {
   onPaymentSuccess: () => void
   onError: (message: string) => void
   isCompletingOrder?: boolean
+  value?: number
+  currency?: string
 }
 
 function CheckoutForm({
   onPaymentSuccess,
   onError,
   isCompletingOrder,
-}: Pick<StripePaymentFormProps, 'onPaymentSuccess' | 'onError' | 'isCompletingOrder'>) {
+  value,
+  currency,
+}: Pick<StripePaymentFormProps, 'onPaymentSuccess' | 'onError' | 'isCompletingOrder' | 'value' | 'currency'>) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -38,10 +43,14 @@ function CheckoutForm({
       if (error) {
         onError(error.message || 'Payment failed. Please try again.')
       } else {
+        trackMetaEvent('AddPaymentInfo', {
+          value,
+          currency,
+        })
         onPaymentSuccess()
       }
-    } catch (err: any) {
-      onError(err?.message || 'An unexpected error occurred.')
+    } catch (err: unknown) {
+      onError(err instanceof Error ? err.message : 'An unexpected error occurred.')
     } finally {
       setIsProcessing(false)
     }
@@ -75,6 +84,8 @@ export function StripePaymentForm({
   onPaymentSuccess,
   onError,
   isCompletingOrder,
+  value,
+  currency,
 }: StripePaymentFormProps) {
   const stripePromise = useMemo(
     () => loadStripe(publishableKey, { stripeAccount: stripeAccountId }),
@@ -99,6 +110,8 @@ export function StripePaymentForm({
         onPaymentSuccess={onPaymentSuccess}
         onError={onError}
         isCompletingOrder={isCompletingOrder}
+        value={value}
+        currency={currency}
       />
     </Elements>
   )

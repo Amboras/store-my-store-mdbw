@@ -324,7 +324,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                           {idx > 0 && <div className="border-t my-4" />}
                           <TrackingInfo
                             fulfillment={fulfillment}
-                            currencyCode={order.currency_code}
                           />
                         </div>
                       ))}

@@ -3,20 +3,131 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle, Package, ArrowRight } from 'lucide-react'
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { trackPurchase } from '@/lib/analytics'
+import { medusaClient } from '@/lib/medusa-client'
+import { trackMetaEvent, toMetaCurrencyValue } from '@/lib/meta-pixel'
+import type { Order, OrderItem } from '@/types'
+
+type PurchaseTrackingDetails = {
+  value?: number
+  currency?: string
+  contentIds: string[]
+  contents?: Array<{
+    id: string
+    quantity?: number
+    item_price?: number
+  }>
+  numItems?: number
+}
+
+function buildPurchaseTrackingDetails(order: Order): PurchaseTrackingDetails {
+  const items: OrderItem[] = Array.isArray(order?.items) ? order.items : []
+
+  const contentIds = items
+    .map((item: OrderItem) => item.variant_id || item.variant?.id || item.product_id)
+    .filter(Boolean)
+
+  const contents = items
+    .map((item: OrderItem) => {
+      const id = item.variant_id || item.variant?.id || item.product_id
+
+      if (!id) {
+        return null
+      }
+
+      return {
+        id,
+        quantity: item.quantity,
+        item_price: toMetaCurrencyValue(item.unit_price ?? item.total),
+      }
+    })
+    .filter(Boolean) as Array<{
+    id: string
+    quantity?: number
+    item_price?: number
+  }>
+
+  return {
+    value: toMetaCurrencyValue(order?.total),
+    currency: order?.currency_code,
+    contentIds,
+    contents: contents.length > 0 ? contents : undefined,
+    numItems: items.reduce((sum: number, item: OrderItem) => sum + (item.quantity || 0), 0),
+  }
+}
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order')
 
-  const tracked = useRef(false)
+  const analyticsTracked = useRef(false)
+  const [purchaseDetails, setPurchaseDetails] = useState<PurchaseTrackingDetails | null>(null)
+  const [purchaseDetailsLoaded, setPurchaseDetailsLoaded] = useState(false)
+
   useEffect(() => {
-    if (orderId && !tracked.current) {
-      tracked.current = true
-      trackPurchase(orderId)
+    if (!orderId || !purchaseDetailsLoaded || analyticsTracked.current) {
+      return
+    }
+
+    analyticsTracked.current = true
+
+    const eventId = trackMetaEvent('Purchase', {
+      value: purchaseDetails?.value,
+      currency: purchaseDetails?.currency,
+      content_ids: purchaseDetails?.contentIds?.length ? purchaseDetails.contentIds : [orderId],
+      content_type: 'product',
+      contents: purchaseDetails?.contents,
+      num_items: purchaseDetails?.numItems,
+      order_id: orderId,
+    })
+
+    trackPurchase(orderId, {
+      eventId,
+      value: purchaseDetails?.value,
+      currency: purchaseDetails?.currency,
+      itemCount: purchaseDetails?.numItems,
+      contentIds: purchaseDetails?.contentIds,
+      contents: purchaseDetails?.contents,
+    })
+  }, [orderId, purchaseDetails, purchaseDetailsLoaded])
+
+  useEffect(() => {
+    if (!orderId) {
+      setPurchaseDetails(null)
+      setPurchaseDetailsLoaded(false)
+      return
+    }
+
+    let cancelled = false
+
+    const loadOrder = async () => {
+      try {
+        const { order } = await medusaClient.store.order.retrieve(orderId)
+
+        if (!cancelled) {
+          setPurchaseDetails(buildPurchaseTrackingDetails(order))
+        }
+      } catch {
+        if (!cancelled) {
+          setPurchaseDetails({
+            contentIds: [orderId],
+          })
+        }
+      } finally {
+        if (!cancelled) {
+          setPurchaseDetailsLoaded(true)
+        }
+      }
+    }
+
+    loadOrder()
+
+    return () => {
+      cancelled = true
     }
   }, [orderId])
+
 
   return (
     <div className="container-custom py-section">

@@ -15,8 +15,9 @@ import { toast } from 'sonner'
 import { PromoCodeInput } from '@/components/checkout/promo-code-input'
 import { getProductImage } from '@/lib/utils/placeholder-images'
 import { trackBeginCheckout } from '@/lib/analytics'
+import { trackMetaEvent, toMetaCurrencyValue } from '@/lib/meta-pixel'
 import { formatPrice } from '@/lib/utils/format-price'
-import type { ShippingOption, CartLineItem } from '@/types'
+import type { ShippingOption, CartLineItem, LineItem } from '@/types'
 
 const StripePaymentForm = dynamic(
   () => import('@/components/checkout/stripe-payment-form').then(m => m.StripePaymentForm),
@@ -91,9 +92,30 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (cart?.id && hasItems && !trackedCheckout.current) {
       trackedCheckout.current = true
-      trackBeginCheckout(cart.id, cart.total, currency)
+      const itemCount = (cart.items || []).reduce((sum: number, item: LineItem) => sum + item.quantity, 0)
+      const contentIds = (cart.items || []).map((item: LineItem) => item.variant_id).filter(Boolean)
+      const contents = (cart.items || []).map((item: LineItem) => ({
+        id: item.variant_id,
+        quantity: item.quantity,
+        item_price: toMetaCurrencyValue(item.unit_price),
+      }))
+
+      const eventId = trackMetaEvent('InitiateCheckout', {
+        value: toMetaCurrencyValue(cart.total),
+        currency,
+        content_ids: contentIds,
+        contents,
+        num_items: itemCount,
+      })
+
+      trackBeginCheckout(cart.id, toMetaCurrencyValue(cart.total), currency, {
+        eventId,
+        itemCount,
+        contentIds,
+        contents,
+      })
     }
-  }, [cart?.id, hasItems, cart?.total, currency])
+  }, [cart?.id, hasItems, cart?.total, currency, cart?.items])
 
   useEffect(() => {
     if (!authLoading && checkoutSettings?.require_account && !isLoggedIn) {
@@ -496,6 +518,8 @@ export default function CheckoutPage() {
                       stripeAccountId={paymentSession.stripe_account_id}
                       publishableKey={stripeConfig.publishableKey}
                       isCompletingOrder={isUpdating}
+                      value={toMetaCurrencyValue(cart?.total)}
+                      currency={currency}
                       onPaymentSuccess={async () => {
                         const order = await completeCheckout()
                         if (order) {
@@ -583,8 +607,8 @@ export default function CheckoutPage() {
                       {(() => {
                         const isTaxInclusive = cart?.items?.some((item: CartLineItem) => item.is_tax_inclusive)
                         const checkoutSubtotal = isTaxInclusive
-                          ? ((cart as any)?.original_item_total ?? 0)
-                          : ((cart as any)?.original_item_subtotal ?? cart?.subtotal ?? 0)
+                          ? (cart?.original_item_total ?? 0)
+                          : (cart?.original_item_subtotal ?? cart?.subtotal ?? 0)
                         return (
                           <>
                             <div className="flex justify-between">

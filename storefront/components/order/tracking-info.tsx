@@ -6,13 +6,15 @@ import type { Fulfillment } from '@/types'
 
 interface TrackingInfoProps {
   fulfillment: Fulfillment
-  currencyCode: string
 }
 
 export default function TrackingInfo({ fulfillment }: TrackingInfoProps) {
-  // Check for tracking in labels (Medusa v2) or tracking_numbers (backward compatibility)
-  const hasLabels = fulfillment.labels && fulfillment.labels.length > 0
-  const hasLegacyTracking = fulfillment.tracking_numbers && fulfillment.tracking_numbers.length > 0
+  // Narrow `labels` / `tracking_numbers` to non-empty arrays via local consts
+  // so downstream JSX can map over them without unsafe non-null assertions.
+  const labels = fulfillment.labels ?? []
+  const trackingNumbers = fulfillment.tracking_numbers ?? []
+  const hasLabels = labels.length > 0
+  const hasLegacyTracking = trackingNumbers.length > 0
   const hasTracking = hasLabels || hasLegacyTracking
 
   // Status based on fulfillment dates
@@ -66,7 +68,7 @@ export default function TrackingInfo({ fulfillment }: TrackingInfoProps) {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Tracking Information
           </p>
-          {fulfillment.labels!.map((label) => {
+          {labels.map((label) => {
             const carrier = detectCarrier(label.tracking_number)
             const formattedNumber = formatTrackingNumber(label.tracking_number, carrier?.code)
 
@@ -120,7 +122,7 @@ export default function TrackingInfo({ fulfillment }: TrackingInfoProps) {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Tracking Information
           </p>
-          {fulfillment.tracking_numbers!.map((trackingNumber, idx) => {
+          {trackingNumbers.map((trackingNumber, idx) => {
             const carrier = detectCarrier(trackingNumber)
             const formattedNumber = formatTrackingNumber(trackingNumber, carrier?.code)
 

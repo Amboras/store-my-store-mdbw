@@ -6,6 +6,7 @@ import Header from '@/components/layout/header'
 import Footer from '@/components/layout/footer'
 import AnnouncementBar from '@/components/layout/announcement-bar'
 import { AnalyticsProvider } from '@/components/analytics-provider'
+import { MetaPixelProvider } from '@/components/meta-pixel-provider'
 import { Toaster } from 'sonner'
 import { ElementPickerListener } from '@/components/element-picker-listener'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -83,7 +84,9 @@ export default function RootLayout({
           <main className="min-h-screen">
             <ErrorBoundary>
               <AnalyticsProvider>
-                {children}
+                <MetaPixelProvider>
+                  {children}
+                </MetaPixelProvider>
               </AnalyticsProvider>
             </ErrorBoundary>
           </main>

@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Truck, RotateCcw, Shield, ChevronRight } from 'lucide-react'
 import ProductActions from '@/components/product/product-actions'
 import ProductAccordion from '@/components/product/product-accordion'
+import { ProductViewTracker } from '@/components/product/product-view-tracker'
 import { getProductPlaceholder } from '@/lib/utils/placeholder-images'
 import { type VariantExtension } from '@/components/product/product-price'
 
@@ -167,6 +168,14 @@ export default async function ProductPage({
               )}
               <h1 className="text-h2 font-heading font-semibold">{product.title}</h1>
             </div>
+
+            <ProductViewTracker
+              productId={product.id}
+              productTitle={product.title}
+              variantId={product.variants?.[0]?.id || null}
+              currency={product.variants?.[0]?.calculated_price?.currency_code || 'usd'}
+              value={product.variants?.[0]?.calculated_price?.calculated_amount ?? null}
+            />
 
             {/* Variant Selector + Price + Add to Cart (client component) */}
             <ProductActions product={product} variantExtensions={variantExtensions} />

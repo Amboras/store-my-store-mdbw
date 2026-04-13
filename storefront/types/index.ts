@@ -54,6 +54,8 @@ export type Cart = {
   items: LineItem[]
   subtotal: number
   total: number
+  original_item_total?: number
+  original_item_subtotal?: number
   region_id?: string
   created_at: string
   updated_at: string

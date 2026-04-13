@@ -1,27 +1,56 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useCart } from '@/hooks/use-cart'
 import { Minus, Plus, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import ProductPrice, { type VariantExtension } from './product-price'
+import { trackAddToCart } from '@/lib/analytics'
+import { trackMetaEvent, toMetaCurrencyValue } from '@/lib/meta-pixel'
+import type { Product } from '@/types'
 
 interface ProductActionsProps {
-  product: any
+  product: Product
   variantExtensions?: Record<string, VariantExtension>
 }
 
+interface VariantOption {
+  option_id?: string
+  option?: { id: string }
+  value: string
+}
+
+interface ProductVariantWithPrice {
+  id: string
+  options?: VariantOption[]
+  calculated_price?: {
+    calculated_amount?: number
+    currency_code?: string
+  } | number
+  [key: string]: unknown
+}
+
+interface ProductOptionValue {
+  id?: string
+  value: string
+}
+
+interface ProductOptionWithValues {
+  id: string
+  title: string
+  values?: (string | ProductOptionValue)[]
+}
 
 // Helper: extract price amount from calculated_price object
-function getVariantPriceAmount(variant: any): number | null {
+function getVariantPriceAmount(variant: ProductVariantWithPrice | undefined): number | null {
   const cp = variant?.calculated_price
   if (!cp) return null
   return typeof cp === 'number' ? cp : cp.calculated_amount ?? null
 }
 
 export default function ProductActions({ product, variantExtensions }: ProductActionsProps) {
-  const variants = product.variants || []
-  const options = product.options || []
+  const variants = useMemo(() => product.variants || [], [product.variants])
+  const options = useMemo(() => product.options || [], [product.options])
 
   // Track selected value per option: { "opt_xxx": "S", "opt_yyy": "Black" }
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
@@ -46,9 +75,9 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
   const selectedVariant = useMemo(() => {
     if (variants.length <= 1) return variants[0]
 
-    return variants.find((v: any) => {
+    return variants.find((v: ProductVariantWithPrice) => {
       if (!v.options) return false
-      return v.options.every((opt: any) => {
+      return v.options.every((opt: VariantOption) => {
         const optionId = opt.option_id || opt.option?.id
         return selectedOptions[optionId] === opt.value
       })
@@ -79,6 +108,17 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
         onSuccess: () => {
           setJustAdded(true)
           toast.success('Added to bag')
+          const metaValue = toMetaCurrencyValue(currentPriceCents)
+          trackAddToCart(product?.id || '', selectedVariant.id, quantity, currentPriceCents ?? undefined)
+          trackMetaEvent('AddToCart', {
+            content_ids: [selectedVariant.id],
+            content_type: 'product',
+            content_name: product?.title,
+            value: metaValue,
+            currency,
+            contents: [{ id: selectedVariant.id, quantity, item_price: metaValue }],
+            num_items: quantity,
+          })
           setTimeout(() => setJustAdded(false), 2000)
         },
         onError: (error: Error) => {
@@ -103,9 +143,9 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
       />
 
       {/* Option Selectors */}
-      {hasMultipleVariants && options.map((option: any) => {
+      {hasMultipleVariants && options.map((option: ProductOptionWithValues) => {
         // option.values is an array of { id, value, ... } objects
-        const values = (option.values || []).map((v: any) =>
+        const values = (option.values || []).map((v: string | ProductOptionValue) =>
           typeof v === 'string' ? v : v.value
         ).filter(Boolean) as string[]
 
@@ -132,9 +172,9 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
                 const isSelected = selectedValue === value
 
                 // Check availability: is there a variant with this option value that's in stock?
-                const isAvailable = variants.some((v: any) => {
+                const isAvailable = variants.some((v: ProductVariantWithPrice) => {
                   const hasValue = v.options?.some(
-                    (o: any) => (o.option_id === optionId || o.option?.id === optionId) && o.value === value
+                    (o: VariantOption) => (o.option_id === optionId || o.option?.id === optionId) && o.value === value
                   )
                   if (!hasValue) return false
                   const vExt = variantExtensions?.[v.id]

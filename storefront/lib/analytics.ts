@@ -9,6 +9,32 @@ const SESSION_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 const SESSION_ID_KEY = 'amboras_session_id'
 const LAST_ACTIVITY_KEY = 'amboras_last_activity'
 
+function readMetaCookie(name: '_fbp' | '_fbc'): string | undefined {
+  if (typeof document === 'undefined') return undefined
+
+  const match = document.cookie
+    .split('; ')
+    .find((cookie) => cookie.startsWith(`${name}=`))
+
+  if (!match) return undefined
+
+  const [, value] = match.split('=')
+  return value || undefined
+}
+
+function getMetaTrackingContext(): { fbp?: string; fbc?: string } {
+  return {
+    fbp: readMetaCookie('_fbp'),
+    fbc: readMetaCookie('_fbc'),
+  }
+}
+
+interface AnalyticsEventContent {
+  id: string
+  quantity?: number
+  item_price?: number
+}
+
 interface AnalyticsEvent {
   type: 'session_start' | 'page_view' | 'heartbeat' | 'session_end'
     | 'add_to_cart' | 'begin_checkout' | 'purchase'
@@ -26,6 +52,11 @@ interface AnalyticsEvent {
   order_id?: string
   item_count?: number
   cart_id?: string
+  event_id?: string
+  content_ids?: string[]
+  contents?: AnalyticsEventContent[]
+  fbp?: string
+  fbc?: string
   timestamp: number
 }
 
@@ -96,7 +127,7 @@ class AnalyticsTracker {
 
   init(): void {
     if (this.isInitialized) return
-    if (!this.storeId || !this.endpoint) return
+    if (!this.storeId || !this.endpoint || !this.publishableKey) return
     if (!hasAnalyticsConsent()) return
 
     this.isInitialized = true
@@ -154,7 +185,17 @@ class AnalyticsTracker {
     this.updateLastActivity()
   }
 
-  trackBeginCheckout(cartId: string, value?: number, currency?: string): void {
+  trackBeginCheckout(
+    cartId: string,
+    value?: number,
+    currency?: string,
+    options?: {
+      eventId?: string | null
+      itemCount?: number
+      contentIds?: string[]
+      contents?: AnalyticsEventContent[]
+    },
+  ): void {
     if (!this.isInitialized) return
     this.pushEvent({
       type: 'begin_checkout',
@@ -162,18 +203,39 @@ class AnalyticsTracker {
       cart_id: cartId,
       value,
       currency,
+      item_count: options?.itemCount,
+      event_id: options?.eventId || undefined,
+      content_ids: options?.contentIds,
+      contents: options?.contents,
+      ...getMetaTrackingContext(),
       timestamp: Date.now(),
     })
     this.updateLastActivity()
   }
 
-  trackPurchase(orderId: string): void {
+  trackPurchase(
+    orderId: string,
+    options?: {
+      eventId?: string | null
+      value?: number
+      currency?: string
+      itemCount?: number
+      contentIds?: string[]
+      contents?: AnalyticsEventContent[]
+    },
+  ): void {
     if (!this.isInitialized) return
-    // Only send the order ID — revenue data is tracked server-side via webhooks
     this.pushEvent({
       type: 'purchase',
       url: window.location.pathname,
       order_id: orderId,
+      event_id: options?.eventId || undefined,
+      value: options?.value,
+      currency: options?.currency,
+      item_count: options?.itemCount,
+      content_ids: options?.contentIds,
+      contents: options?.contents,
+      ...getMetaTrackingContext(),
       timestamp: Date.now(),
     })
     this.flush()
@@ -202,7 +264,7 @@ class AnalyticsTracker {
       headers: {
         'Content-Type': 'application/json',
         'X-Store-Environment-ID': this.storeId,
-        ...(this.publishableKey ? { 'x-publishable-api-key': this.publishableKey } : {}),
+        'x-publishable-api-key': this.publishableKey,
       },
       body: JSON.stringify(payload),
       keepalive: true,
@@ -227,7 +289,7 @@ class AnalyticsTracker {
       headers: {
         'Content-Type': 'application/json',
         'X-Store-Environment-ID': this.storeId,
-        ...(this.publishableKey ? { 'x-publishable-api-key': this.publishableKey } : {}),
+        'x-publishable-api-key': this.publishableKey,
       },
       body: JSON.stringify(payload),
       keepalive: true,
@@ -341,12 +403,32 @@ export function trackAddToCart(productId: string, variantId: string, quantity: n
   tracker?.trackAddToCart(productId, variantId, quantity, value)
 }
 
-export function trackBeginCheckout(cartId: string, value?: number, currency?: string): void {
-  tracker?.trackBeginCheckout(cartId, value, currency)
+export function trackBeginCheckout(
+  cartId: string,
+  value?: number,
+  currency?: string,
+  options?: {
+    eventId?: string | null
+    itemCount?: number
+    contentIds?: string[]
+    contents?: AnalyticsEventContent[]
+  },
+): void {
+  tracker?.trackBeginCheckout(cartId, value, currency, options)
 }
 
-export function trackPurchase(orderId: string): void {
-  tracker?.trackPurchase(orderId)
+export function trackPurchase(
+  orderId: string,
+  options?: {
+    eventId?: string | null
+    value?: number
+    currency?: string
+    itemCount?: number
+    contentIds?: string[]
+    contents?: AnalyticsEventContent[]
+  },
+): void {
+  tracker?.trackPurchase(orderId, options)
 }
 
 export function destroyAnalytics(): void {

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { trackMetaEvent } from '@/lib/meta-pixel'
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('')
@@ -30,10 +31,13 @@ export default function RegisterPage() {
         email,
         password,
       })
+      trackMetaEvent('CompleteRegistration', {
+        status: 'completed',
+      })
       toast.success('Account created successfully!')
       router.push('/account')
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to create account')
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create account')
     }
   }
 

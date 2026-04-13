@@ -5,6 +5,7 @@ import { useCart } from '@/hooks/use-cart'
 import { Minus, Plus, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { trackAddToCart } from '@/lib/analytics'
+import { trackMetaEvent, toMetaCurrencyValue } from '@/lib/meta-pixel'
 
 interface ProductVariant {
   id: string;
@@ -13,6 +14,7 @@ interface ProductVariant {
   manage_inventory?: boolean;
   calculated_price?: {
     calculated_amount?: number;
+    currency_code?: string;
   };
 }
 
@@ -38,7 +40,17 @@ export default function AddToCart({ variant }: AddToCartProps) {
         onSuccess: () => {
           setJustAdded(true)
           toast.success('Added to bag')
-          trackAddToCart(variant.product_id || '', variant.id, quantity, variant.calculated_price?.calculated_amount)
+          const value = variant.calculated_price?.calculated_amount
+          const metaValue = toMetaCurrencyValue(value)
+          trackAddToCart(variant.product_id || '', variant.id, quantity, value)
+          trackMetaEvent('AddToCart', {
+            content_ids: [variant.id],
+            content_type: 'product',
+            value: metaValue,
+            currency: variant.calculated_price?.currency_code || 'usd',
+            contents: [{ id: variant.id, quantity, item_price: metaValue }],
+            num_items: quantity,
+          })
           setTimeout(() => setJustAdded(false), 2000)
         },
         onError: (error: Error) => {
