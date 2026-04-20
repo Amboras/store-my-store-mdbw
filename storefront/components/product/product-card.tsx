@@ -1,7 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { getProductImage } from '@/lib/utils/placeholder-images'
-import ProductPrice, { isProductSoldOut, type VariantExtension } from './product-price'
+import { isProductSoldOut, type VariantExtension } from './product-price'
+import OwnershipOptions from './ownership-options'
 
 interface ProductCardProps {
   product: any
@@ -14,7 +15,6 @@ export default function ProductCard({ product, variantExtensions }: ProductCardP
 
   const currency = calculatedPrice?.currency_code || 'usd'
   const currentAmount = calculatedPrice?.calculated_amount
-  const ext = variant?.id ? variantExtensions?.[variant.id] : null
 
   const soldOut = isProductSoldOut(product.variants || [], variantExtensions)
 
@@ -38,17 +38,17 @@ export default function ProductCard({ product, variantExtensions }: ProductCardP
         </div>
 
         {/* Product Info */}
-        <div className="space-y-1">
+        <div className="space-y-2.5">
           <h3 className={`text-sm font-medium line-clamp-1 group-hover:underline underline-offset-4 transition-all ${soldOut ? 'text-muted-foreground' : ''}`}>
             {product.title}
           </h3>
-          <ProductPrice
-            amount={currentAmount}
-            currency={currency}
-            compareAtPrice={ext?.compare_at_price}
-            soldOut={soldOut}
-            size="card"
-          />
+          <div className="pt-1 border-t border-border/60">
+            <OwnershipOptions
+              purchaseAmount={currentAmount}
+              currency={currency}
+              variant="card"
+            />
+          </div>
         </div>
       </div>
     </Link>

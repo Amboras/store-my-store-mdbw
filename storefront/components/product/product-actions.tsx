@@ -12,6 +12,7 @@ import type { Product } from '@/types'
 interface ProductActionsProps {
   product: Product
   variantExtensions?: Record<string, VariantExtension>
+  hidePrice?: boolean
 }
 
 interface VariantOption {
@@ -48,7 +49,7 @@ function getVariantPriceAmount(variant: ProductVariantWithPrice | undefined): nu
   return typeof cp === 'number' ? cp : cp.calculated_amount ?? null
 }
 
-export default function ProductActions({ product, variantExtensions }: ProductActionsProps) {
+export default function ProductActions({ product, variantExtensions, hidePrice = false }: ProductActionsProps) {
   // Medusa Admin API returns variant.options as VariantOption[] (the `options`
   // relation expanded), but the SDK's generic ProductVariant type declares it
   // as Record<string, string>. Cast here so the rest of the component can use
@@ -143,13 +144,15 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
   return (
     <div className="space-y-6">
       {/* Price */}
-      <ProductPrice
-        amount={currentPriceCents}
-        currency={currency}
-        compareAtPrice={ext?.compare_at_price}
-        soldOut={isOutOfStock}
-        size="detail"
-      />
+      {!hidePrice && (
+        <ProductPrice
+          amount={currentPriceCents}
+          currency={currency}
+          compareAtPrice={ext?.compare_at_price}
+          soldOut={isOutOfStock}
+          size="detail"
+        />
+      )}
 
       {/* Option Selectors */}
       {hasMultipleVariants && options.map((option: ProductOptionWithValues) => {
@@ -247,7 +250,7 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock || isAddingItem}
-          className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold uppercase tracking-wide transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-semibold uppercase tracking-[0.15em] transition-all ${
             isOutOfStock
               ? 'bg-muted text-muted-foreground cursor-not-allowed'
               : justAdded
@@ -260,15 +263,23 @@ export default function ProductActions({ product, variantExtensions }: ProductAc
           ) : justAdded ? (
             <>
               <Check className="h-4 w-4" />
-              Added
+              Reserved
             </>
           ) : isOutOfStock ? (
-            'Sold Out'
+            'Reserved'
           ) : (
-            'Add to Bag'
+            'Reserve Aircraft'
           )}
         </button>
       </div>
+
+      {/* Charter CTA */}
+      <a
+        href="mailto:charter@meridian-aviation.com?subject=Charter%20Inquiry"
+        className="block w-full text-center py-3.5 text-sm font-semibold uppercase tracking-[0.15em] border border-foreground hover:bg-foreground hover:text-background transition-colors"
+      >
+        Request Charter Quote
+      </a>
     </div>
   )
 }

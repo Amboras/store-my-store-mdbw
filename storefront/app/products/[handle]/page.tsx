@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Truck, RotateCcw, Shield, ChevronRight } from 'lucide-react'
 import ProductActions from '@/components/product/product-actions'
 import ProductAccordion from '@/components/product/product-accordion'
+import OwnershipOptions from '@/components/product/ownership-options'
 import { ProductViewTracker } from '@/components/product/product-view-tracker'
 import { getProductPlaceholder } from '@/lib/utils/placeholder-images'
 import { type VariantExtension } from '@/components/product/product-price'
@@ -177,22 +178,29 @@ export default async function ProductPage({
               value={product.variants?.[0]?.calculated_price?.calculated_amount ?? null}
             />
 
-            {/* Variant Selector + Price + Add to Cart (client component) */}
-            <ProductActions product={product} variantExtensions={variantExtensions} />
+            {/* Acquire vs. Charter */}
+            <OwnershipOptions
+              purchaseAmount={product.variants?.[0]?.calculated_price?.calculated_amount ?? null}
+              currency={product.variants?.[0]?.calculated_price?.currency_code || 'usd'}
+              variant="detail"
+            />
+
+            {/* Variant Selector + Add to Cart (client component) */}
+            <ProductActions product={product} variantExtensions={variantExtensions} hidePrice />
 
             {/* Trust Signals */}
             <div className="grid grid-cols-3 gap-4 py-6 border-t">
               <div className="text-center">
+                <Shield className="h-5 w-5 mx-auto mb-1.5" strokeWidth={1.5} />
+                <p className="text-xs text-muted-foreground">Certified Pre-Flight</p>
+              </div>
+              <div className="text-center">
                 <Truck className="h-5 w-5 mx-auto mb-1.5" strokeWidth={1.5} />
-                <p className="text-xs text-muted-foreground">Free Shipping</p>
+                <p className="text-xs text-muted-foreground">Global Delivery</p>
               </div>
               <div className="text-center">
                 <RotateCcw className="h-5 w-5 mx-auto mb-1.5" strokeWidth={1.5} />
-                <p className="text-xs text-muted-foreground">30-Day Returns</p>
-              </div>
-              <div className="text-center">
-                <Shield className="h-5 w-5 mx-auto mb-1.5" strokeWidth={1.5} />
-                <p className="text-xs text-muted-foreground">Secure Checkout</p>
+                <p className="text-xs text-muted-foreground">Lifetime Concierge</p>
               </div>
             </div>
 
