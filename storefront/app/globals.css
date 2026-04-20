@@ -4,16 +4,17 @@
 
 @layer base {
   :root {
-    --background: 40 20% 98%;
-    --foreground: 0 0% 10%;
-    --muted: 40 10% 94%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 35 40% 50%;
-    --accent-foreground: 0 0% 100%;
-    --border: 40 10% 88%;
-    --ring: 35 40% 50%;
-    --primary: 0 0% 10%;
-    --primary-foreground: 0 0% 98%;
+    /* Meridian luxury palette — obsidian + champagne gold */
+    --background: 0 0% 5%;
+    --foreground: 40 25% 93%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 40 10% 62%;
+    --accent: 40 55% 62%;
+    --accent-foreground: 0 0% 6%;
+    --border: 0 0% 16%;
+    --ring: 40 55% 62%;
+    --primary: 40 55% 62%;
+    --primary-foreground: 0 0% 6%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
@@ -23,15 +24,15 @@
   }
 
   .dark {
-    --background: 0 0% 6%;
-    --foreground: 40 20% 94%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 35 45% 55%;
-    --accent-foreground: 0 0% 100%;
+    --background: 0 0% 5%;
+    --foreground: 40 25% 93%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 40 10% 62%;
+    --accent: 40 55% 62%;
+    --accent-foreground: 0 0% 6%;
     --border: 0 0% 16%;
-    --ring: 35 45% 55%;
-    --primary: 40 20% 94%;
+    --ring: 40 55% 62%;
+    --primary: 40 55% 62%;
     --primary-foreground: 0 0% 6%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
@@ -61,28 +62,40 @@
     text-wrap: balance;
   }
 
+  .tracking-luxe {
+    letter-spacing: 0.35em;
+  }
+
   .link-underline {
     @apply relative;
   }
   .link-underline::after {
     content: '';
-    @apply absolute bottom-0 left-0 h-px w-0 bg-foreground transition-all duration-300;
+    @apply absolute bottom-0 left-0 h-px w-0 transition-all duration-300;
+    background-color: hsl(var(--accent));
   }
   .link-underline:hover::after {
     @apply w-full;
   }
 
+  /* Gold hairline divider */
+  .divider-gold {
+    width: 3rem;
+    height: 1px;
+    background-color: hsl(var(--accent));
+  }
+
   /* Brand color utilities - uses colors from Store.metadata.brand */
   .btn-brand-primary {
-    background-color: var(--brand-primary, hsl(var(--primary)));
-    color: white;
+    background-color: var(--brand-primary, hsl(var(--accent)));
+    color: hsl(var(--accent-foreground));
   }
   .btn-brand-primary:hover {
     opacity: 0.9;
   }
 
   .text-brand-primary {
-    color: var(--brand-primary, hsl(var(--primary)));
+    color: var(--brand-primary, hsl(var(--accent)));
   }
 
   .text-brand-secondary {
@@ -90,11 +103,11 @@
   }
 
   .border-brand-primary {
-    border-color: var(--brand-primary, hsl(var(--border)));
+    border-color: var(--brand-primary, hsl(var(--accent)));
   }
 
   .bg-brand-primary {
-    background-color: var(--brand-primary, hsl(var(--primary)));
+    background-color: var(--brand-primary, hsl(var(--accent)));
   }
 
   .bg-brand-secondary {
@@ -109,7 +122,8 @@ html {
 
 /* Selection color */
 ::selection {
-  @apply bg-accent/20 text-foreground;
+  background-color: hsl(var(--accent) / 0.25);
+  color: hsl(var(--foreground));
 }
 
 /* Focus styles */
@@ -131,4 +145,18 @@ html {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* Subtle ken-burns effect for hero image */
+@keyframes ken-burns {
+  from {
+    transform: scale(1.0);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+.animate-ken-burns {
+  animation: ken-burns 20s ease-out forwards;
 }

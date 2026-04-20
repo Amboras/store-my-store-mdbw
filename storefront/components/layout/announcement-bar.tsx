@@ -9,9 +9,9 @@ export default function AnnouncementBar() {
   if (!isVisible) return null
 
   return (
-    <div className="relative bg-foreground text-primary-foreground">
-      <div className="container-custom flex items-center justify-center py-2.5 text-sm tracking-wide">
-        <p>Free shipping on orders over $75 — Shop the new collection</p>
+    <div className="relative bg-black text-foreground border-b border-border">
+      <div className="container-custom flex items-center justify-center py-2.5 text-[11px] uppercase tracking-[0.3em]">
+        <p>Global delivery &amp; commissioning included on every Meridian aircraft</p>
         <button
           onClick={() => setIsVisible(false)}
           className="absolute right-4 p-1 hover:opacity-70 transition-opacity"

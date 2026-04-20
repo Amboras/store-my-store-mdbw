@@ -6,7 +6,6 @@ import { Search, ShoppingBag, User, Menu, X, LogIn } from 'lucide-react'
 import { useCart } from '@/hooks/use-cart'
 import { useAuth } from '@/hooks/use-auth'
 import CartDrawer from '@/components/cart/cart-drawer'
-import { useCollections } from '@/hooks/use-collections'
 
 export default function Header() {
   const { itemCount } = useCart()
@@ -14,7 +13,6 @@ export default function Header() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const { data: collections } = useCollections()
 
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const mobileMenuCloseRef = useRef<HTMLButtonElement>(null)
@@ -65,69 +63,68 @@ export default function Header() {
       <header
         className={`sticky top-0 z-40 w-full transition-all duration-300 ${
           isScrolled
-            ? 'bg-background/95 backdrop-blur-md border-b shadow-sm'
-            : 'bg-background border-b'
+            ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
+            : 'bg-background border-b border-border'
         }`}
       >
         <div className="container-custom">
-          <div className="flex h-16 items-center justify-between gap-4">
+          <div className="flex h-20 items-center justify-between gap-4">
             {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 -ml-2 lg:hidden hover:opacity-70 transition-opacity"
+              className="p-2 -ml-2 lg:hidden hover:text-accent transition-colors"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </button>
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <span className="font-heading text-2xl font-semibold tracking-tight">
-                Store
+            <Link href="/" className="flex items-center gap-2 group">
+              <span className="font-heading text-2xl lg:text-3xl font-medium tracking-[0.25em] uppercase">
+                Meridian
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-8">
-              <Link href="/products" className="text-sm tracking-wide uppercase link-underline py-1" prefetch={true}>
-                Shop All
+            <nav className="hidden lg:flex items-center gap-10">
+              <Link href="/products" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
+                The Fleet
               </Link>
-              {collections?.slice(0, 4).map((collection: any) => (
-                <Link
-                  key={collection.id}
-                  href={`/collections/${collection.handle}`}
-                  className="text-sm tracking-wide uppercase link-underline py-1"
-                  prefetch={true}
-                >
-                  {collection.title}
-                </Link>
-              ))}
+              <Link href="/about" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
+                Ownership
+              </Link>
+              <Link href="/shipping" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
+                Delivery
+              </Link>
+              <Link href="/contact" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
+                Consultation
+              </Link>
             </nav>
 
             {/* Actions */}
             <div className="flex items-center gap-1">
               <Link
                 href="/search"
-                className="p-2.5 hover:opacity-70 transition-opacity"
+                className="p-2.5 hover:text-accent transition-colors"
                 aria-label="Search"
               >
                 <Search className="h-5 w-5" />
               </Link>
               <Link
                 href={isLoggedIn ? '/account' : '/auth/login'}
-                className="p-2.5 hover:opacity-70 transition-opacity hidden sm:block"
+                className="p-2.5 hover:text-accent transition-colors hidden sm:block"
                 aria-label={isLoggedIn ? 'Account' : 'Sign in'}
               >
                 {isLoggedIn ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
               </Link>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative p-2.5 hover:opacity-70 transition-opacity"
+                className="relative p-2.5 hover:text-accent transition-colors"
                 aria-label="Shopping bag"
               >
                 <ShoppingBag className="h-5 w-5" />
                 {itemCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
+                  <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                     {itemCount}
                   </span>
                 )}
@@ -152,49 +149,46 @@ export default function Header() {
             onKeyDown={handleMobileMenuKeyDown}
             className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-background animate-slide-in-right"
           >
-            <div className="flex items-center justify-between p-4 border-b">
-              <span className="font-heading text-xl font-semibold">Menu</span>
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <span className="font-heading text-xl font-medium tracking-[0.25em] uppercase">Meridian</span>
               <button
                 ref={mobileMenuCloseRef}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 hover:opacity-70"
+                className="p-2 hover:text-accent transition-colors"
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="p-4 space-y-1">
-              <Link
-                href="/products"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block py-3 text-lg tracking-wide border-b border-border/50"
-                prefetch={true}
-              >
-                Shop All
-              </Link>
-              {collections?.map((collection: any) => (
+            <nav className="p-5 space-y-1">
+              {[
+                { href: '/products', label: 'The Fleet' },
+                { href: '/about', label: 'Ownership' },
+                { href: '/shipping', label: 'Delivery' },
+                { href: '/contact', label: 'Consultation' },
+              ].map((item) => (
                 <Link
-                  key={collection.id}
-                  href={`/collections/${collection.handle}`}
+                  key={item.href}
+                  href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-3 text-lg tracking-wide border-b border-border/50"
+                  className="block py-4 text-sm uppercase tracking-[0.2em] border-b border-border/60 hover:text-accent transition-colors"
                   prefetch={true}
                 >
-                  {collection.title}
+                  {item.label}
                 </Link>
               ))}
-              <div className="pt-4 space-y-1">
+              <div className="pt-6 space-y-2">
                 <Link
                   href={isLoggedIn ? '/account' : '/auth/login'}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-3 text-muted-foreground"
+                  className="block py-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-accent transition-colors"
                 >
                   {isLoggedIn ? 'Account' : 'Sign In'}
                 </Link>
                 <Link
                   href="/search"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-3 text-muted-foreground"
+                  className="block py-2 text-xs uppercase tracking-[0.25em] text-muted-foreground hover:text-accent transition-colors"
                 >
                   Search
                 </Link>
