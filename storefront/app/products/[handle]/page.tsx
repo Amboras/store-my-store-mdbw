@@ -5,7 +5,7 @@ export const revalidate = 3600 // ISR: revalidate every hour
 import { medusaServerClient } from '@/lib/medusa-client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Truck, RotateCcw, Shield, ChevronRight } from 'lucide-react'
+import { Truck, RotateCcw, Shield, ChevronRight, Sparkles } from 'lucide-react'
 import ProductActions from '@/components/product/product-actions'
 import ProductAccordion from '@/components/product/product-accordion'
 import OwnershipOptions from '@/components/product/ownership-options'
@@ -177,6 +177,31 @@ export default async function ProductPage({
               currency={product.variants?.[0]?.calculated_price?.currency_code || 'usd'}
               value={product.variants?.[0]?.calculated_price?.calculated_amount ?? null}
             />
+
+            {/* Bundle Offer + Scarcity */}
+            <div className="relative overflow-hidden border border-accent/40 bg-gradient-to-br from-accent/10 via-background to-background rounded-sm">
+              {/* Urgency badge */}
+              <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-destructive text-white px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] font-medium rounded-sm">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                </span>
+                Only 1 Left
+              </div>
+
+              <div className="p-5 pr-28">
+                <div className="flex items-center gap-2 text-accent mb-2">
+                  <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Limited Fleet Offer</span>
+                </div>
+                <p className="text-h4 font-heading font-semibold leading-tight">
+                  Buy Two, Get One <span className="text-accent italic">Free</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Commission any three Meridian aircraft — the third is on the house. Delivery scheduled at your convenience.
+                </p>
+              </div>
+            </div>
 
             {/* Acquire vs. Charter */}
             <OwnershipOptions
