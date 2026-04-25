@@ -266,20 +266,13 @@ export default function ProductActions({ product, variantExtensions, hidePrice =
               Reserved
             </>
           ) : isOutOfStock ? (
-            'Reserved'
+            'Sold Out'
           ) : (
-            'Reserve Aircraft'
+            'Add to Bag'
           )}
         </button>
       </div>
 
-      {/* Charter CTA */}
-      <a
-        href="mailto:charter@meridian-aviation.com?subject=Charter%20Inquiry"
-        className="block w-full text-center py-3.5 text-sm font-semibold uppercase tracking-[0.15em] border border-foreground hover:bg-foreground hover:text-background transition-colors"
-      >
-        Request Charter Quote
-      </a>
     </div>
   )
 }

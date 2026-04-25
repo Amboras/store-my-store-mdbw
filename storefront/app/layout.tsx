@@ -30,10 +30,10 @@ const body = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Meridian — Private Aviation, Redefined',
-    template: '%s | Meridian',
+    default: 'Lumière — Hand-poured Ritual Candles',
+    template: '%s | Lumière',
   },
-  description: 'Factory-new private jets from the world\'s most celebrated manufacturers. Gulfstream, Bombardier, Dassault, Cessna, Embraer.',
+  description: 'Hand-poured soy candles in small batches. Crackling wooden wicks, slow-blended fragrances, and minimalist ceramic vessels designed for the rituals of every day.',
 }
 
 export default function RootLayout({

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, ShoppingBag, User, Menu, X, LogIn } from 'lucide-react'
+import { Search, ShoppingBag, User, Menu, X, LogIn, Flame } from 'lucide-react'
 import { useCart } from '@/hooks/use-cart'
 import { useAuth } from '@/hooks/use-auth'
 import CartDrawer from '@/components/cart/cart-drawer'
@@ -23,14 +23,12 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Focus close button when mobile menu opens
   useEffect(() => {
     if (isMobileMenuOpen) {
       mobileMenuCloseRef.current?.focus()
     }
   }, [isMobileMenuOpen])
 
-  // Close mobile menu on Escape
   useEffect(() => {
     if (!isMobileMenuOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,7 +38,6 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isMobileMenuOpen])
 
-  // Focus trap for mobile menu
   const handleMobileMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== 'Tab' || !mobileMenuRef.current) return
     const focusable = mobileMenuRef.current.querySelectorAll<HTMLElement>(
@@ -58,13 +55,20 @@ export default function Header() {
     }
   }, [])
 
+  const navLinks = [
+    { href: '/products', label: 'Shop All' },
+    { href: '/collections/signature', label: 'Signature' },
+    { href: '/about', label: 'Our Story' },
+    { href: '/contact', label: 'Contact' },
+  ]
+
   return (
     <>
       <header
         className={`sticky top-0 z-40 w-full transition-all duration-300 ${
           isScrolled
-            ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-sm'
-            : 'bg-background border-b border-border'
+            ? 'bg-background/95 backdrop-blur-md border-b border-border shadow-[0_1px_8px_rgba(0,0,0,0.04)]'
+            : 'bg-background border-b border-border/60'
         }`}
       >
         <div className="container-custom">
@@ -80,25 +84,24 @@ export default function Header() {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 group">
-              <span className="font-heading text-2xl lg:text-3xl font-medium tracking-[0.25em] uppercase">
-                Meridian
+              <Flame className="h-5 w-5 text-accent group-hover:animate-flicker" strokeWidth={1.5} />
+              <span className="font-heading text-2xl lg:text-[28px] font-medium tracking-[0.2em] uppercase">
+                Lumière
               </span>
             </Link>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-10">
-              <Link href="/products" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
-                The Fleet
-              </Link>
-              <Link href="/about" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
-                Ownership
-              </Link>
-              <Link href="/shipping" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
-                Delivery
-              </Link>
-              <Link href="/contact" className="text-[11px] tracking-[0.25em] uppercase link-underline py-1" prefetch={true}>
-                Consultation
-              </Link>
+              {navLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-[11px] tracking-[0.25em] uppercase link-underline py-1"
+                  prefetch={true}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </nav>
 
             {/* Actions */}
@@ -108,21 +111,21 @@ export default function Header() {
                 className="p-2.5 hover:text-accent transition-colors"
                 aria-label="Search"
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-5 w-5" strokeWidth={1.5} />
               </Link>
               <Link
                 href={isLoggedIn ? '/account' : '/auth/login'}
                 className="p-2.5 hover:text-accent transition-colors hidden sm:block"
                 aria-label={isLoggedIn ? 'Account' : 'Sign in'}
               >
-                {isLoggedIn ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+                {isLoggedIn ? <User className="h-5 w-5" strokeWidth={1.5} /> : <LogIn className="h-5 w-5" strokeWidth={1.5} />}
               </Link>
               <button
                 onClick={() => setIsCartOpen(true)}
                 className="relative p-2.5 hover:text-accent transition-colors"
                 aria-label="Shopping bag"
               >
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="h-5 w-5" strokeWidth={1.5} />
                 {itemCount > 0 && (
                   <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
                     {itemCount}
@@ -138,7 +141,7 @@ export default function Header() {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-foreground/40"
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <div
@@ -150,7 +153,10 @@ export default function Header() {
             className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-background animate-slide-in-right"
           >
             <div className="flex items-center justify-between p-5 border-b border-border">
-              <span className="font-heading text-xl font-medium tracking-[0.25em] uppercase">Meridian</span>
+              <div className="flex items-center gap-2">
+                <Flame className="h-4 w-4 text-accent" strokeWidth={1.5} />
+                <span className="font-heading text-xl font-medium tracking-[0.2em] uppercase">Lumière</span>
+              </div>
               <button
                 ref={mobileMenuCloseRef}
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -161,12 +167,7 @@ export default function Header() {
               </button>
             </div>
             <nav className="p-5 space-y-1">
-              {[
-                { href: '/products', label: 'The Fleet' },
-                { href: '/about', label: 'Ownership' },
-                { href: '/shipping', label: 'Delivery' },
-                { href: '/contact', label: 'Consultation' },
-              ].map((item) => (
+              {navLinks.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

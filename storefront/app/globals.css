@@ -4,37 +4,33 @@
 
 @layer base {
   :root {
-    /* Meridian luxury palette — obsidian + champagne gold */
-    --background: 0 0% 5%;
-    --foreground: 40 25% 93%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 40 10% 62%;
-    --accent: 40 55% 62%;
-    --accent-foreground: 0 0% 6%;
-    --border: 0 0% 16%;
-    --ring: 40 55% 62%;
-    --primary: 40 55% 62%;
-    --primary-foreground: 0 0% 6%;
-    --destructive: 0 72% 51%;
+    /* Lumière palette — ivory + espresso + burnt sienna */
+    --background: 38 36% 95%;
+    --foreground: 22 24% 10%;
+    --muted: 38 32% 90%;
+    --muted-foreground: 30 12% 38%;
+    --accent: 14 55% 44%;
+    --accent-foreground: 38 36% 97%;
+    --border: 38 24% 82%;
+    --ring: 14 55% 44%;
+    --primary: 22 24% 12%;
+    --primary-foreground: 38 36% 97%;
+    --destructive: 4 70% 48%;
     --destructive-foreground: 0 0% 98%;
-
-    /* Brand colors (dynamically injected from Store.metadata.brand) */
-    /* Access in CSS: var(--brand-primary), var(--brand-secondary) */
-    /* Managed by BrandStyleInjector component */
   }
 
   .dark {
-    --background: 0 0% 5%;
-    --foreground: 40 25% 93%;
-    --muted: 0 0% 10%;
-    --muted-foreground: 40 10% 62%;
-    --accent: 40 55% 62%;
-    --accent-foreground: 0 0% 6%;
-    --border: 0 0% 16%;
-    --ring: 40 55% 62%;
-    --primary: 40 55% 62%;
-    --primary-foreground: 0 0% 6%;
-    --destructive: 0 72% 51%;
+    --background: 22 16% 8%;
+    --foreground: 38 28% 92%;
+    --muted: 22 14% 14%;
+    --muted-foreground: 30 12% 62%;
+    --accent: 14 60% 56%;
+    --accent-foreground: 22 24% 8%;
+    --border: 22 14% 20%;
+    --ring: 14 60% 56%;
+    --primary: 38 28% 92%;
+    --primary-foreground: 22 24% 8%;
+    --destructive: 4 70% 52%;
     --destructive-foreground: 0 0% 98%;
   }
 }
@@ -63,7 +59,7 @@
   }
 
   .tracking-luxe {
-    letter-spacing: 0.35em;
+    letter-spacing: 0.32em;
   }
 
   .link-underline {
@@ -78,14 +74,14 @@
     @apply w-full;
   }
 
-  /* Gold hairline divider */
-  .divider-gold {
-    width: 3rem;
+  /* Hairline divider in accent color */
+  .divider-accent {
+    width: 2.5rem;
     height: 1px;
     background-color: hsl(var(--accent));
   }
 
-  /* Brand color utilities - uses colors from Store.metadata.brand */
+  /* Brand color utilities (driven by Store metadata when set) */
   .btn-brand-primary {
     background-color: var(--brand-primary, hsl(var(--accent)));
     color: hsl(var(--accent-foreground));
@@ -115,23 +111,19 @@
   }
 }
 
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Selection color */
 ::selection {
   background-color: hsl(var(--accent) / 0.25);
   color: hsl(var(--foreground));
 }
 
-/* Focus styles */
 :focus-visible {
   @apply outline-2 outline-offset-2 outline-ring;
 }
 
-/* Cookie consent animation */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -147,7 +139,6 @@ html {
   animation: fade-in 0.3s ease-out;
 }
 
-/* Subtle ken-burns effect for hero image */
 @keyframes ken-burns {
   from {
     transform: scale(1.0);
@@ -158,5 +149,23 @@ html {
 }
 
 .animate-ken-burns {
-  animation: ken-burns 20s ease-out forwards;
+  animation: ken-burns 24s ease-out forwards;
+}
+
+/* Subtle flame flicker for hero accent */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.animate-flicker {
+  animation: flicker 2.5s ease-in-out infinite;
+}
+
+/* Marquee for trust strip */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 32s linear infinite;
 }
