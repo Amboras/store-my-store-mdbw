@@ -91,7 +91,7 @@ export default function BundleSelector({
           : unitPriceCents * addedQty
 
       trackAddToCart(productId, addedVariantId, addedQty, valueCents)
-      const metaValue = toMetaCurrencyValue(valueCents)
+      const metaValue = toMetaCurrencyValue(valueCents) ?? 0
       trackMetaEvent('AddToCart', {
         content_ids: [addedVariantId],
         content_type: 'product',
