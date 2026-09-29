@@ -5,6 +5,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {},
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
   allowedDevOrigins: ['*.tunnel.amboras.com'],
   output: process.env.VERCEL ? undefined : 'standalone',

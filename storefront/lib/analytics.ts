@@ -13,6 +13,75 @@ const SESSION_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 const SESSION_ID_KEY = 'amboras_session_id'
 const LAST_ACTIVITY_KEY = 'amboras_last_activity'
 
+// ── sessionStorage that cannot throw ────────────────────────────────────────
+// Reading sessionStorage is not safe everywhere. iOS in-app webviews
+// (Instagram, Facebook, TikTok), Safari Lockdown Mode and some private modes
+// throw a SecurityError on ACCESS rather than returning null.
+//
+// getOrCreateSession() is the first thing the tracker does, so an unguarded
+// throw there killed the whole session — no session_start, no page_view, no
+// events at all. Silent, and concentrated in exactly the traffic a merchant
+// gets when they run social campaigns: measured on August Berg, first-party
+// Meta referrals fell 86% and mobile sessions 62% across the week their
+// social spend ramped, while GA4 recorded that same channel going from zero
+// to ~90 sessions/day.
+//
+// Every other storage access in this file was already wrapped; these were the
+// three that were not.
+//
+// The fallback is an in-memory map. Session identity then lasts one page
+// instead of one visit, so a multi-page visit reports as several sessions —
+// worse stitching, but the visitor is measured instead of vanishing. The
+// latch keeps reads and writes on the same store once either has failed;
+// without it a working getItem paired with a throwing setItem (quota) would
+// mint a fresh session id on every call.
+const memoryStore = new Map<string, string>()
+let storageUnavailable = false
+
+function sessionGet(key: string): string | null {
+  if (!storageUnavailable) {
+    try {
+      return sessionStorage.getItem(key)
+    } catch {
+      storageUnavailable = true
+    }
+  }
+  return memoryStore.get(key) ?? null
+}
+
+function sessionSet(key: string, value: string): void {
+  if (!storageUnavailable) {
+    try {
+      sessionStorage.setItem(key, value)
+      return
+    } catch {
+      storageUnavailable = true
+    }
+  }
+  memoryStore.set(key, value)
+}
+
+// crypto.randomUUID needs WebKit 15.4+; an older in-app webview throws a
+// TypeError on the call — killing the session bootstrap exactly the way an
+// unguarded sessionStorage did. Session ids only need to be unique per
+// tenant-day for GROUP BY session_id, not cryptographically strong, so a
+// Math.random fallback is fine for the stragglers.
+function safeUuid(): string {
+  try {
+    return crypto.randomUUID()
+  } catch {
+    let out = ''
+    for (let i = 0; i < 36; i++) {
+      if (i === 8 || i === 13 || i === 18 || i === 23) out += '-'
+      else if (i === 14) out += '4'
+      // RFC 4122 variant nibble (8|9|a|b) — strict validators reject plain random.
+      else if (i === 19) out += (8 + Math.floor(Math.random() * 4)).toString(16)
+      else out += Math.floor(Math.random() * 16).toString(16)
+    }
+    return out
+  }
+}
+
 // ── Multi-theme A/B attribution ─────────────────────────────────────────────
 // The buyer's variant assignment is written by the edge middleware into the
 // signed `amb_theme` cookie (payload: base64url(JSON).base64url(hmac)). The
@@ -49,9 +118,16 @@ interface PdpContext {
   variant_id: string
 }
 
+// Routed through the sessionGet/sessionSet guard, not raw sessionStorage:
+// in a storage-blocked webview the old swallow-and-degrade catch made this
+// cohort emit pdp_exposure (ids ride inline on that event) but never attach
+// PDP attribution to begin_checkout/purchase — exposures without attributable
+// conversions, systematically understating the variant's conversion rate in
+// the A/B z-test. The memory fallback keeps attribution for the page the
+// exposure happened on, which is where most PDP-attributed conversions start.
 function readPdpContext(): PdpContext | null {
   try {
-    const raw = sessionStorage.getItem(PDP_CONTEXT_KEY)
+    const raw = sessionGet(PDP_CONTEXT_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
     return typeof parsed?.experiment_id === 'string' &&
@@ -59,18 +135,14 @@ function readPdpContext(): PdpContext | null {
       ? parsed
       : null
   } catch {
-    // sessionStorage unavailable (private mode) / malformed → no PDP context.
-    // Per-event cookie attribution below is unaffected.
+    // Malformed JSON → no PDP context. Per-event cookie attribution below is
+    // unaffected. (Storage failure no longer lands here — the guard absorbs it.)
     return null
   }
 }
 
 function writePdpContext(ctx: PdpContext): void {
-  try {
-    sessionStorage.setItem(PDP_CONTEXT_KEY, JSON.stringify(ctx))
-  } catch {
-    // best effort — the exposure event still carries the ids inline
-  }
+  sessionSet(PDP_CONTEXT_KEY, JSON.stringify(ctx))
 }
 
 function readPlainCookie(name: string): string | null {
@@ -448,6 +520,11 @@ interface AnalyticsEvent {
   amb_vid?: string | null
   theme_id?: string | null
   ab_group_id?: string | null
+  // Heartbeat events only: the interval this tracker heartbeats at (3000
+  // default, 5000 on slow-2g/2g). The read side derives dwell as
+  // interval x heartbeat-count; without this it assumed a flat 3s and
+  // under-counted slow connections by 40%.
+  hb_ms?: number
   timestamp: number
 }
 
@@ -565,8 +642,12 @@ class AnalyticsTracker {
       timestamp: Date.now(),
     })
 
-    // Fire immediate heartbeat so user shows as "live" right away, then flush it
-    this.pushEvent({ type: 'heartbeat', url: window.location.pathname, timestamp: Date.now() })
+    // Fire immediate heartbeat so user shows as "live" right away, then flush it.
+    // hb_ms carries the interval this tracker heartbeats at (3s default, 5s on
+    // slow-2g/2g) so the read side can derive dwell as interval x count —
+    // a flat 3s multiplier under-counted slow connections by 40% and silently
+    // raised their engaged-session bar to ~17s.
+    this.pushEvent({ type: 'heartbeat', url: window.location.pathname, timestamp: Date.now(), hb_ms: getHeartbeatInterval() })
     this.flush()
     this.startHeartbeat()
     this.startFlushTimer()
@@ -760,18 +841,20 @@ class AnalyticsTracker {
       // but this keeps batches small. Keyed by group id so a new experiment
       // re-fires exactly once. Pushed BEFORE the envelope below so it gets the
       // same attribution block as every other event.
-      try {
-        if (sessionStorage.getItem(EXPOSURE_GUARD_KEY) !== attr.ab_group_id) {
-          events.push({
-            type: 'theme_exposure',
-            url: window.location.pathname,
-            timestamp: Date.now(),
-          })
-          sessionStorage.setItem(EXPOSURE_GUARD_KEY, attr.ab_group_id)
-        }
-      } catch {
-        // sessionStorage unavailable (private mode) — skip the exposure event;
-        // per-event attribution below is unaffected.
+      // sessionGet/sessionSet, not raw sessionStorage: in a storage-blocked
+      // webview the amb_theme COOKIE still works, so this cohort's events all
+      // carry ab_group_id — but the old catch skipped the exposure event the
+      // per-theme metrics roll up from. Sessions attributed to a theme with
+      // no exposure ever recorded skews the A/B denominators. No try/catch:
+      // the guard swallows storage failures internally, so nothing here can
+      // throw any more.
+      if (sessionGet(EXPOSURE_GUARD_KEY) !== attr.ab_group_id) {
+        events.push({
+          type: 'theme_exposure',
+          url: window.location.pathname,
+          timestamp: Date.now(),
+        })
+        sessionSet(EXPOSURE_GUARD_KEY, attr.ab_group_id)
       }
     }
 
@@ -911,6 +994,9 @@ class AnalyticsTracker {
             type: 'heartbeat',
             url: window.location.pathname,
             timestamp: Date.now(),
+            // Interval this tracker heartbeats at — see the immediate
+            // heartbeat in init() for why the read side needs it.
+            hb_ms: interval,
           })
           this.updateLastActivity()
         })
@@ -940,27 +1026,27 @@ class AnalyticsTracker {
   }
 
   private getOrCreateSession(): string {
-    const existingId = sessionStorage.getItem(SESSION_ID_KEY)
-    const lastActivity = sessionStorage.getItem(LAST_ACTIVITY_KEY)
+    const existingId = sessionGet(SESSION_ID_KEY)
+    const lastActivity = sessionGet(LAST_ACTIVITY_KEY)
 
     if (existingId && lastActivity && !this.isSessionExpired()) {
       return existingId
     }
 
-    const newId = crypto.randomUUID()
-    sessionStorage.setItem(SESSION_ID_KEY, newId)
+    const newId = safeUuid()
+    sessionSet(SESSION_ID_KEY, newId)
     this.updateLastActivity()
     return newId
   }
 
   private isSessionExpired(): boolean {
-    const lastActivity = sessionStorage.getItem(LAST_ACTIVITY_KEY)
+    const lastActivity = sessionGet(LAST_ACTIVITY_KEY)
     if (!lastActivity) return true
     return Date.now() - parseInt(lastActivity, 10) > SESSION_TIMEOUT
   }
 
   private updateLastActivity(): void {
-    sessionStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString())
+    sessionSet(LAST_ACTIVITY_KEY, Date.now().toString())
   }
 
   private getUTMParams(): {
